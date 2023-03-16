@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+
+
+ <!--// Gouraud diffuse /////////////////////////////////////// -->
+<script id="vertex-shader" type="x-shader/x-vertex">
+
+attribute  vec4 vPosition;
+attribute  vec3 vNormal;
+varying vec4 fColor;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+
+uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+uniform vec4 lightPosition;
+uniform float shininess;
+
+void main()
+{
+    vec3 pos = -(modelViewMatrix * vPosition).xyz;
+
+    vec3 light = lightPosition.xyz;
+    vec3 L = normalize(light - pos);
+
+    vec3 E = normalize(-pos);
+    vec3 H =normalize(L + E);
+
+    vec4 NN = vec4(vNormal, 0.0);
+
+    vec3 N = normalize((modelViewMatrix * NN).xyz);
+
+    vec4 ambient = ambientProduct;
+
+    float Kd = max(dot(L, N), 0.0);
+    vec4  diffuse = Kd*diffuseProduct;
+
+    fColor = ambient + diffuse;
+    fColor.a = 1.0;
+
+    gl_Position =  projectionMatrix * modelViewMatrix * vPosition;
+    gl_Position.z = -gl_Position.z;   
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+precision mediump float;
+
+varying vec4 fColor;
+
+void
+main()
+{
+    gl_FragColor = fColor;
+}
+</script>
+
+
+<!--// Gouraud specular /////////////////////////////////////// -->
+<script id="vertex-shader2" type="x-shader/x-vertex">
+
+attribute  vec4 vPosition;
+attribute  vec3 vNormal;
+varying vec4 fColor;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+
+uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+uniform vec4 lightPosition;
+uniform float shininess;
+
+void main()
+{
+    vec3 pos = -(modelViewMatrix * vPosition).xyz;
+
+    vec3 light = lightPosition.xyz;
+    vec3 L = normalize(light - pos);
+
+    vec3 E = normalize(-pos);
+    vec3 H = normalize(L + E);
+
+    vec4 NN = vec4(vNormal, 0);
+
+    vec3 N = normalize((modelViewMatrix * NN).xyz);
+
+    vec4 ambient = ambientProduct;
+
+    float Ks = pow( max(dot(N, H), 0.0), shininess );
+    vec4  specular = Ks * specularProduct;
+    
+    if( dot(L, N) < 0.0 ) {
+    specular = vec4(0.0, 0.0, 0.0, 1.0);
+    } 
+
+    fColor = ambient + specular;
+    fColor.a = 1.0;
+
+    gl_Position =  projectionMatrix * modelViewMatrix * vPosition;
+    gl_Position.z = -gl_Position.z;   
+}
+</script>
+
+<script id="fragment-shader2" type="x-shader/x-fragment">
+
+precision mediump float;
+
+varying vec4 fColor;
+
+void
+main()
+{
+    gl_FragColor = fColor;
+}
+</script>
+
+
+<!--// Phong diffuse /////////////////////////////////////// -->
+<script id="vertex-shader3" type="x-shader/x-vertex">
+
+attribute vec4 vPosition;
+attribute vec4 vNormal;
+
+varying vec3 N, L, E;
+uniform mat4 modelViewMatrix, projectionMatrix;
+uniform vec4 lightPosition;
+uniform mat3 normalMatrix;
+
+void main()
+{
+    vec3 pos = (modelViewMatrix * vPosition).xyz;
+    
+    // check for directional light
+    
+    if(lightPosition.w == 0.0) L = normalize(lightPosition.xyz);
+    else L = normalize(lightPosition.xyz - pos);
+    
+    E =  -normalize(pos);
+    N = normalize(normalMatrix*vNormal.xyz);
+
+    gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+    
+}
+</script>
+
+<script id="fragment-shader3" type="x-shader/x-fragment">
+
+precision mediump float;
+
+uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+uniform float shininess;
+varying vec3 N, L, E;
+
+void main()
+{    
+    vec4 fColor;
+    
+    vec3 H = normalize(L + E);
+    vec4 ambient = ambientProduct;
+
+    float Kd = max(dot(L, N), 0.0);
+    vec4  diffuse = Kd*diffuseProduct;
+
+    fColor = ambient + diffuse;
+    fColor.a = 1.0;
+
+    gl_FragColor = fColor;
+}
+</script>
+
+
+<!--// Phong specular /////////////////////////////////////// -->
+<script id="vertex-shader4" type="x-shader/x-vertex">
+
+attribute vec4 vPosition;
+attribute vec4 vNormal;
+
+varying vec3 N, L, E;
+uniform mat4 modelViewMatrix, projectionMatrix;
+uniform vec4 lightPosition;
+uniform mat3 normalMatrix;
+
+void main()
+{
+    vec3 pos = (modelViewMatrix * vPosition).xyz;
+    
+    // check for directional light
+    
+    if(lightPosition.w == 0.0) L = normalize(lightPosition.xyz);
+    else L = normalize(lightPosition.xyz - pos);
+    
+    E =  -normalize(pos);
+    N = normalize(normalMatrix*vNormal.xyz);
+
+    gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+    
+}
+</script>
+
+<script id="fragment-shader4" type="x-shader/x-fragment">
+
+precision mediump float;
+
+uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+uniform float shininess;
+varying vec3 N, L, E;
+
+void main()
+{    
+    vec4 fColor;
+    
+    vec3 H = normalize(L + E);
+    vec4 ambient = ambientProduct;
+
+    float Ks = pow(max(dot(N, H), 0.0), shininess);
+    vec4  specular = Ks * specularProduct;
+    
+    if(dot(L, N) < 0.0) specular = vec4(0.0, 0.0, 0.0, 1.0);
+
+    fColor = ambient + specular;
+    fColor.a = 1.0;
+
+    gl_FragColor = fColor;
+}
+</script>
+
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="initShaders.js"></script>
+<script type="text/javascript" src="gl-matrix.js"></script>
+<script type="text/javascript" src="colorCube.js"></script>
+<script type="text/javascript" src="colorTetra.js"></script>
+<script type="text/javascript" src="main.js"></script>
+
+<body>
+<canvas id="gl-canvas" width="1200" height="600">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+
+<br/>
+
+<button id= "xButton">Rotate X</button>
+<button id= "yButton">Rotate Y</button>
+<button id= "zButton">Rotate Z</button>
+
+</body>
+</html>
